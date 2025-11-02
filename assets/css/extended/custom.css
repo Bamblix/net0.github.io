@@ -1,0 +1,88 @@
+/* Import cyber fonts */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&family=Share+Tech+Mono&display=swap');
+
+:root {
+    --primary-bg: #0a0a0a;
+    --secondary-bg: #1a1a1a;
+    --silver: #c0c0c0;
+    --chrome-light: #e8e8e8;
+    --chrome-dark: #808080;
+    --accent: #00d9ff;
+    --accent-glow: #00d9ff40;
+}
+
+body {
+    background: var(--primary-bg);
+    color: var(--silver);
+    font-family: 'Rajdhani', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Orbitron', sans-serif;
+    color: var(--chrome-light);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.main {
+    background: var(--secondary-bg);
+    border: 1px solid var(--chrome-dark);
+    box-shadow: 0 0 20px rgba(0, 217, 255, 0.1);
+}
+
+a {
+    color: var(--accent);
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+a:hover {
+    color: var(--chrome-light);
+    text-shadow: 0 0 10px var(--accent-glow);
+}
+
+code {
+    font-family: 'Share Tech Mono', monospace;
+    background: #000000;
+    color: #00ff41;
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 1px solid var(--chrome-dark);
+}
+
+pre {
+    background: #000000 !important;
+    border: 1px solid var(--chrome-dark);
+    box-shadow: inset 0 0 10px rgba(0, 217, 255, 0.1);
+}
+
+.post-title {
+    font-family: 'Orbitron', sans-serif;
+    color: var(--chrome-light);
+    text-shadow: 0 0 10px var(--accent-glow);
+}
+
+.header {
+    background: linear-gradient(135deg, var(--secondary-bg) 0%, var(--primary-bg) 100%);
+    border-bottom: 2px solid var(--chrome-dark);
+    box-shadow: 0 2px 10px rgba(0, 217, 255, 0.2);
+}
+
+.tag {
+    background: var(--secondary-bg);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: 'Rajdhani', sans-serif;
+}
+
+.post-entry {
+    border: 1px solid var(--chrome-dark);
+    background: var(--secondary-bg);
+    transition: all 0.3s ease;
+}
+
+.post-entry:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 20px var(--accent-glow);
+    transform: translateY(-3px);
+}
