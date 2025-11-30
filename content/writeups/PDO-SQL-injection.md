@@ -189,13 +189,13 @@ The parser recognizes that the second `?` is inside backticks - it's part of an 
 But what if we add a null byte?
 
 ```sql
-sort=\?;-- %00
+sort=\?;--%00
 ```
 
 Now PDO tries to parse:
 
 ```sql
-SELECT * FROM findings WHERE scan_id = ? ORDER BY `\?;-- [NULL]`
+SELECT * FROM findings WHERE scan_id = ? ORDER BY `\?;--%00`
 ```
 
 The parser starts reading the backtick-quoted identifier. Then it hits the null byte. It breaks. It stops recognizing the backticks.
