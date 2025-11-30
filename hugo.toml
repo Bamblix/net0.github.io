@@ -1,6 +1,6 @@
 baseURL = 'https://Bamblix.github.io/net0.github.io'
 languageCode = 'en-us'
-title = 'CTF Writeups'
+title = 'Net0'
 theme = 'PaperMod'
 
 [params]
@@ -9,10 +9,19 @@ theme = 'PaperMod'
   showReadingTime = true
   showShareButtons = false
   showPostNavLinks = true
+
+[params.fuseOpts]
+  isCaseSensitive = false
+  shouldSort = true
+  location = 0
+  distance = 1000
+  threshold = 0.4
+  minMatchCharLength = 0
+  keys = ["title", "permalink", "summary", "content"]
   
 [params.homeInfoParams]
   Title = "Welcome to my CTF blog"
-  Content = "Security researcher documenting my journey through HackTheBox and other CTF challenges"
+  Content = "Documenting my journey through HackTheBox and other CTF challenges"
 
 [[menu.main]]
   name = "Home"
@@ -28,3 +37,21 @@ theme = 'PaperMod'
   name = "About"
   url = "/about/"
   weight = 30
+
+[[menu.main]]
+  name = "Search"
+  url = "/search/"
+  weight = 25
+
+[markup.goldmark.renderer]
+  unsafe = true
+
+[[module.mounts]]
+source = "static"
+target = "static"
+
+[markup.goldmark.renderHooks.image]
+useEmbedded = "fallback"
+
+[markup.goldmark.renderHooks.link]
+useEmbedded = "fallback"
