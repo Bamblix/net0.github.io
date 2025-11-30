@@ -30,7 +30,7 @@ $query = "SELECT * FROM users WHERE username = '$username' AND password = '$pass
 $result = mysqli_query($conn, $query);
 ```
 
-The problem is obvious - user input is concatenated directly into the SQL query. When a user submits:
+The problem is obvious, user input is concatenated directly into the SQL query. When a user submits:
 
 ```sql
 username: admin' OR 1=1-- -
@@ -145,7 +145,7 @@ So PDO implements its own SQL parser. This parser recognizes:
 
 - Strings in single quotes (`'...'`)
 - Strings in double quotes (`"..."`)
-- Identifiers in backticks (``...``)
+- Identifiers in backticks (`` `...` ``)
 - Comments (`- ...` and `/* ... */`)
 
 When PDO sees a `?` inside any of these, it knows: "That's not a real placeholder, skip it."
@@ -160,7 +160,9 @@ It breaks.
 
 ### The Null Byte Trick - Breaking the parser
 
-When PDO's parser hits a null byte (`\x00` or `%00` in URL encoding), it doesn't know how to handle it. The parser expects characters in the `\x01` to `\xff` range. A null byte is outside that range.
+This is where it gets wild.
+
+When PDO's parser hits a null byte (`\x00` or `%00` in URL encoding), it doesn't know how to handle it and it breaks. The parser expects characters in the `\x01` to `\xff` range. A null byte is outside that range.
 The result? The parser breaks and stops tracking its current state.
 Let's see this in action. Consider our vulnerable query:
 
@@ -207,9 +209,9 @@ Now we have two `?` markers in the query:
 1. The original one: `WHERE scan_id = ?`
 2. Our injected one: `ORDER BY \?`
 
-But wait - the `--`  in our payload is a SQL comment. From PDO's perspective, it comments out the original `?`.
+But wait the `--`  in our payload is a SQL comment. From PDO's perspective, it comments out the original `?`.
 
-PDO now sees only ONE placeholder - our fake one.
+PDO now sees only ONE placeholder, our fake one.
 
 When we call `execute([$scan_id])`, PDO takes the `scan_id` value and substitutes it into... our injected `?` in the ORDER BY clause.
 
@@ -251,7 +253,7 @@ This is what users are **supposed** to see.
 ```bash
 | id | key_name           | api_key                              |
 |----|--------------------|--------------------------------------|
-| 1  | Production API     | prod_api_a3f8b2c1d4e5f6a7b8c9d0e1f2.. |
+| 1  | Production API     | sk_prod_a3f8b2c1d4e5f6a7b8c9d0e1f2.. |
 ```
 
 This is what users should **never** see.
@@ -260,7 +262,7 @@ This is what users should **never** see.
 
 The application only shows data from `findings`. Users can sort by severity, hostname, port, etc.
 
-Through our SQLi, we trick the application into reading from `api_keys` instead - a table we're not supposed to access.
+Through our SQLi, we trick the application into reading from `api_keys` instead a table we're not supposed to access.
 
 **Normal query:**
 
@@ -423,7 +425,7 @@ scan_id=x+FROM+(SELECT+api_key+AS+'x+FROM+api_keys)y;--+-`
 | `;` | Ends the statement |
 | `-+-` | Comments out the rest |
 
-Why `'x` as the column name? PDO escapes single quotes by adding a backslash. So `'x` becomes `\'x`. The `\` in our sort parameter (`\?`) ensures the outer column name also becomes `\'x` - they match, and MySQL returns our data.
+Why `'x` as the column name? PDO escapes single quotes by adding a backslash. So `'x` becomes `\'x`. The `\` in our sort parameter (`\?`) ensures the outer column name also becomes `\'x` , they match, and MySQL returns our data.
 
 ### Remediation - How to fix it
 
@@ -431,7 +433,7 @@ Now that we understand the vulnerability, how do we prevent it?
 
 ### Option 1: Disable Emulated Prepares
 
-The simplest fix - tell PDO to use real prepared statements:
+The simplest fix, tell PDO to use real prepared statements:
 
 ```php
 $pdo = new PDO($dsn, $user, $pass, [
@@ -461,7 +463,7 @@ If the user sends anything not in the whitelist, it defaults to a safe value.
 
 ### Option 3: Both (Recommended)
 
-Defense in depth - use both protections:
+Defense in depth, use both protections:
 
 ```php
 $pdo = new PDO($dsn, $user, $pass, [
@@ -504,7 +506,7 @@ Web Application Firewalls might miss encoded payloads like `%00`.
 
 ### Conclusion & References
 
-Prepared statements are secure - but only when used correctly.
+Prepared statements are secure, but only when used correctly.
 
 The key takeaways from this technique:
 
