@@ -129,7 +129,7 @@ Everything. And here’s why.
 
 Here's something that surprises many developers: PDO doesn't always use real prepared statements.
 
-By default, when connecting to MySQL, PDO uses **emulated prepared statements**. This means PDO doesn't send your query and parameters separately to the database. Instead, PDO itself parses the query, finds the `?` placeholders, escapes your values, and substitutes them in - all before the query reaches MySQL.
+By default, when connecting to MySQL, PDO uses **emulated prepared statements**. This means PDO doesn't send your query and parameters separately to the database. Instead, PDO itself parses the query, finds the `?` placeholders, escapes your values, and substitutes them in, all before the query reaches MySQL.
 
 Why does this matter? Because PDO needs to **parse your SQL** to find those placeholders.
 
