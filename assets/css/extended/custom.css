@@ -47,19 +47,47 @@ a:hover {
     text-shadow: 0 0 10px var(--accent-glow) !important;
 }
 
+/* Inline code styling - compact and subtle */
 code {
-    font-family: 'Share Tech Mono', 'Courier New', monospace !important;
-    background: #000000 !important;
-    color: #00ff41 !important;
-    padding: 2px 6px !important;
-    border-radius: 3px !important;
-    border: 1px solid var(--chrome-dark) !important;
+    font-family: 'Anonymous Pro', 'Courier New', monospace !important;
+    background: #1a1a1a !important;
+    color: #c0c0c0 !important;
+    padding: 1px 4px !important;
+    border-radius: 2px !important;
+    border: 1px solid var(--chrome-darker) !important;
+    font-size: 0.85em !important;
+    font-weight: 600 !important;
 }
 
+/* Code blocks - blended with theme */
+.highlight,
+.highlight pre,
 pre {
-    background: #000000 !important;
-    border: 2px solid var(--chrome-dark) !important;
-    font-family: 'Share Tech Mono', monospace !important;
+    background: #1a1a1a !important;  /* Same as inline code */
+    border: 1px solid var(--chrome-darker) !important;
+    border-radius: 2px !important;
+    margin: 1rem 0 !important;
+}
+
+.highlight {
+    padding: 0 !important;
+}
+
+.highlight pre {
+    border: none !important;
+    margin: 0 !important;
+    padding: 1rem !important;
+}
+
+pre code,
+.highlight pre code {
+    background: transparent !important;
+      /* Muted green - more subtle */
+    border: none !important;
+    padding: 0 !important;
+    font-size: 0.9em !important;
+    display: block !important;
+    font-weight: 400 !important;
 }
 
 .post-title {
@@ -222,4 +250,41 @@ article h2 {
 p, span, div, a {
     font-family: 'Anonymous Pro', monospace !important;
     letter-spacing: 0.5px !important;
+}
+
+/* Lists - match body text weight */
+ul, ol, li {
+    font-family: 'Anonymous Pro', monospace !important;
+    letter-spacing: 0.5px !important;
+    font-weight: 400 !important;
+}
+
+/* Make list items consistent with paragraphs */
+li {
+    margin: 0.5rem 0 !important;
+}
+
+/* Collapsible sections */
+details {
+    background: rgba(26, 26, 26, 0.5) !important;
+    border: 1px solid var(--chrome-darker) !important;
+    border-radius: 4px !important;
+    padding: 0.5rem 1rem !important;
+    margin: 1rem 0 !important;
+}
+
+summary {
+    cursor: pointer !important;
+    font-weight: 700 !important;
+    color: var(--accent) !important;
+    padding: 0.5rem 0 !important;
+}
+
+summary:hover {
+    color: var(--chrome-light) !important;
+}
+
+details[open] summary {
+    border-bottom: 1px solid var(--chrome-darker) !important;
+    margin-bottom: 1rem !important;
 }

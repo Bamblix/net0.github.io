@@ -1,11 +1,41 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
-    <title>CTF Writeups</title>
+    <title>Net0</title>
     <link>http://localhost:1313/net0.github.io/</link>
-    <description>Recent content on CTF Writeups</description>
+    <description>Recent content on Net0</description>
     <generator>Hugo -- 0.152.2</generator>
     <language>en-us</language>
+    <lastBuildDate>Sun, 30 Nov 2025 00:00:00 +0000</lastBuildDate>
     <atom:link href="http://localhost:1313/net0.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Breaking PDO: When Prepared Statements Aren&#39;t Enough</title>
+      <link>http://localhost:1313/net0.github.io/writeups/pdo-sql-injection/</link>
+      <pubDate>Sun, 30 Nov 2025 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/net0.github.io/writeups/pdo-sql-injection/</guid>
+      <description>A novel SQL injection technique that bypasses PDO prepared statements using null byte parser exploitation</description>
+    </item>
+    <item>
+      <title>Who Am I?</title>
+      <link>http://localhost:1313/net0.github.io/about/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/net0.github.io/about/</guid>
+      <description>&lt;p&gt;I&amp;rsquo;m &lt;strong&gt;net0&lt;/strong&gt;, a cybersecurity enthusiast and IT support specialist. I&amp;rsquo;m passionate about penetration testing, Active Directory security, and solving complex CTF challenges.&lt;/p&gt;
+&lt;h1 id=&#34;what-i-do&#34;&gt;What I Do&lt;/h1&gt;
+&lt;ul&gt;
+&lt;li&gt;Currently working through &lt;strong&gt;HackTheBox CPTS certification&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;CTF Player: Focusing on AD exploitation, privilege escalation, and web security&lt;/li&gt;
+&lt;li&gt;Documenting my learning journey through writeups&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1 id=&#34;skills--tools&#34;&gt;Skills &amp;amp; Tools&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;Offensive Security:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Active Directory attacks (ADCS, Kerberos delegation, ESC3/ESC8/ESC15/ESC16)&lt;/li&gt;
+&lt;li&gt;Network Recon&lt;/li&gt;
+&lt;li&gt;Linux &amp;amp; Windows privilege escalation&lt;/li&gt;
+&lt;li&gt;Web application pentesting&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;IT &amp;amp; Automation:&lt;/strong&gt;&lt;/p&gt;</description>
+    </item>
   </channel>
 </rss>

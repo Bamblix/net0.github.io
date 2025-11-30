@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Writeups on Net0</title>
+    <link>http://localhost:1313/net0.github.io/categories/writeups/</link>
+    <description>Recent content in Writeups on Net0</description>
+    <generator>Hugo -- 0.152.2</generator>
+    <language>en-us</language>
+    <lastBuildDate>Sun, 30 Nov 2025 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://localhost:1313/net0.github.io/categories/writeups/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Breaking PDO: When Prepared Statements Aren&#39;t Enough</title>
+      <link>http://localhost:1313/net0.github.io/writeups/pdo-sql-injection/</link>
+      <pubDate>Sun, 30 Nov 2025 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/net0.github.io/writeups/pdo-sql-injection/</guid>
+      <description>A novel SQL injection technique that bypasses PDO prepared statements using null byte parser exploitation</description>
+    </item>
+  </channel>
+</rss>

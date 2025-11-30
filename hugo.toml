@@ -55,3 +55,9 @@ useEmbedded = "fallback"
 
 [markup.goldmark.renderHooks.link]
 useEmbedded = "fallback"
+
+[markup]
+  [markup.highlight]
+    style = "github-dark"  # or try: dracula, github-dark, nord, onedark
+    lineNos = false
+    lineNumbersInTable = false
