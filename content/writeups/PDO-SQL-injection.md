@@ -377,7 +377,7 @@ GET /findings.php?scan_id=1&sort=severity
 
 Returns findings sorted by severity. Everything works normally.
 
-**Step 2: Test the Parser Break**
+### Step 2: Test the Parser Break**
 
 ```bash
 GET /findings.php?scan_id=1&sort=?%00
