@@ -288,3 +288,25 @@ details[open] summary {
     border-bottom: 1px solid var(--chrome-darker) !important;
     margin-bottom: 1rem !important;
 }
+
+/* Hide scrollbar for code blocks - ROBUST VERSION */
+pre,
+pre code,
+.highlight pre,
+.highlight,
+code {
+    overflow-x: auto !important;
+    scrollbar-width: none !important; /* Firefox */
+    -ms-overflow-style: none !important; /* IE/Edge */
+}
+
+/* Hide WebKit scrollbars */
+pre::-webkit-scrollbar, 
+pre code::-webkit-scrollbar,
+.highlight pre::-webkit-scrollbar,
+.highlight::-webkit-scrollbar,
+code::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}

@@ -12,6 +12,9 @@ theme = 'PaperMod'
   defaultTheme = "dark"
   disableThemeToggle = true
 
+[params.assets]
+  disableFingerprinting = false
+
 [params.fuseOpts]
   isCaseSensitive = false
   shouldSort = true
