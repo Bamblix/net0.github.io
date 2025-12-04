@@ -1,0 +1,30 @@
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  function checkCodeOverflow() {
+    document.querySelectorAll('pre').forEach(function(pre) {
+      const code = pre.querySelector('code');
+      if (!code) return;
+      
+      function updateFade() {
+        const hasOverflow = code.scrollWidth > code.clientWidth;
+        const isAtEnd = code.scrollLeft >= (code.scrollWidth - code.clientWidth - 5);
+        
+        if (hasOverflow && !isAtEnd) {
+          pre.classList.add('has-overflow');
+        } else {
+          pre.classList.remove('has-overflow');
+        }
+      }
+      
+      // Check on scroll
+      code.addEventListener('scroll', updateFade);
+      
+      // Initial check
+      updateFade();
+    });
+  }
+  
+  checkCodeOverflow();
+  window.addEventListener('resize', checkCodeOverflow);
+});
+</script>

@@ -10,7 +10,7 @@
 <meta name="description" content="A novel SQL injection technique that bypasses PDO prepared statements using null byte parser exploitation">
 <meta name="author" content="net0">
 <link rel="canonical" href="http://localhost:1313/net0.github.io/writeups/pdo-sql-injection/">
-<link crossorigin="anonymous" href="/net0.github.io/assets/css/stylesheet.16ca5286caac283cf7ab3930e18f3b72b1a885e7ea5a6c4b2cdfecf3f6be415e.css" integrity="sha256-FspShsqsKDz3qzkw4Y87crGohefqWmxLLN/s8/a&#43;QV4=" rel="preload stylesheet" as="style">
+<link crossorigin="anonymous" href="/net0.github.io/assets/css/stylesheet.fb3efdb8e9583ba3f0b38d37008eb04e19aebe2d84f576824c7bc083aef922f6.css" integrity="sha256-&#43;z79uOlYO6Pws403AI6wThmuvi2E9XaCTHvAg675IvY=" rel="preload stylesheet" as="style">
 <link rel="icon" href="http://localhost:1313/net0.github.io/favicon.ico">
 <link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/net0.github.io/favicon-16x16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/net0.github.io/favicon-32x32.png">
@@ -27,7 +27,24 @@
         }
 
     </style>
-</noscript>
+</noscript><script>
+document.addEventListener('DOMContentLoaded', function() {
+  function checkCodeOverflow() {
+    const codeBlocks = document.querySelectorAll('pre, .highlight');
+    
+    codeBlocks.forEach(function(block) {
+      if (block.scrollWidth > block.clientWidth) {
+        block.classList.add('has-overflow');
+      } else {
+        block.classList.remove('has-overflow');
+      }
+    });
+  }
+  
+  checkCodeOverflow();
+  window.addEventListener('resize', checkCodeOverflow);
+});
+</script>
 </head>
 <body id="top">
     <header class="header">
@@ -483,7 +500,36 @@ Web Application Firewalls might miss encoded payloads like <code>%00</code>.</p>
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
         <path d="M12 6H0l6-6z" />
     </svg>
-</a>
+</a><script>
+document.addEventListener('DOMContentLoaded', function() {
+  function checkCodeOverflow() {
+    document.querySelectorAll('pre').forEach(function(pre) {
+      const code = pre.querySelector('code');
+      if (!code) return;
+      
+      function updateFade() {
+        const hasOverflow = code.scrollWidth > code.clientWidth;
+        const isAtEnd = code.scrollLeft >= (code.scrollWidth - code.clientWidth - 5);
+        
+        if (hasOverflow && !isAtEnd) {
+          pre.classList.add('has-overflow');
+        } else {
+          pre.classList.remove('has-overflow');
+        }
+      }
+      
+      
+      code.addEventListener('scroll', updateFade);
+      
+      
+      updateFade();
+    });
+  }
+  
+  checkCodeOverflow();
+  window.addEventListener('resize', checkCodeOverflow);
+});
+</script>
 
 <script>
     let menu = document.getElementById('menu');

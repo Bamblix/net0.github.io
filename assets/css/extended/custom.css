@@ -228,6 +228,8 @@ body::after {
 /* Force typewriter font everywhere */
 * {
     font-family: 'Anonymous Pro', 'Courier New', monospace !important;
+    scrollbar-width: thin;
+    scrollbar-color: #404040 #1a1a1a;
 }
 
 /* Make all headings look consistent */
@@ -287,17 +289,6 @@ summary:hover {
 details[open] summary {
     border-bottom: 1px solid var(--chrome-darker) !important;
     margin-bottom: 1rem !important;
-}
-
-/* Hide scrollbar for code blocks - ROBUST VERSION */
-pre,
-pre code,
-.highlight pre,
-.highlight,
-code {
-    overflow-x: auto !important;
-    scrollbar-width: none !important; /* Firefox */
-    -ms-overflow-style: none !important; /* IE/Edge */
 }
 
 /* Hide WebKit scrollbars */
@@ -370,4 +361,38 @@ body {
     .main {
         max-width: 1600px !important;
     }
+}
+
+/* Hide scrollbar for code blocks but keep scrolling */
+pre,
+.highlight pre,
+code {
+  overflow-x: auto !important;
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE/Edge */
+}
+
+/* Hide WebKit scrollbars */
+pre::-webkit-scrollbar, 
+.highlight pre::-webkit-scrollbar,
+code::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Fade gradient only for overflowing code blocks */
+.has-overflow {
+  position: relative !important;
+}
+
+.has-overflow::after {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  width: 80px !important;
+  height: 100% !important;
+  background: linear-gradient(to right, transparent, #1a1a1a) !important;
+  pointer-events: none !important;
 }
