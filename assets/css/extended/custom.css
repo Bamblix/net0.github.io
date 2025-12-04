@@ -310,3 +310,64 @@ code::-webkit-scrollbar {
     width: 0 !important;
     height: 0 !important;
 }
+
+/* Fix navigation spacing - works on ALL pages */
+#menu,
+.nav #menu,
+header .nav #menu {
+    display: flex !important;
+    gap: 15px !important;
+    list-style: none !important;
+}
+
+#menu a,
+.nav #menu a,
+header .nav #menu a {
+    padding: 0 10px !important;
+    margin: 0 !important;
+    display: inline-block !important;
+}
+
+/* Make sure menu items don't collapse */
+#menu li,
+.nav #menu li {
+    display: inline-block !important;
+    margin: 0 !important;
+}
+
+/* Use more of the screen width - code needs space! */
+.main {
+    max-width: 1400px !important;  /* Much wider */
+    padding: 2rem 4rem !important;  /* More horizontal padding */
+}
+
+.post-content {
+    max-width: 100% !important;  /* Use full width of main */
+}
+
+.post-single {
+    max-width: 100% !important;
+}
+
+article {
+    max-width: 100% !important;
+}
+
+/* Reduce wasted side margins */
+body {
+    padding: 0 !important;
+}
+
+/* Make container use more space */
+.container,
+.page {
+    max-width: 1400px !important;
+    margin: 0 auto !important;
+}
+
+/* On very wide screens, go even bigger */
+@media (min-width: 1600px) {
+    .main {
+        max-width: 1600px !important;
+    }
+}
